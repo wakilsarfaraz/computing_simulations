@@ -1,0 +1,411 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>This script solves the time dependent problem using uniform triangulation.</title><meta name="generator" content="MATLAB 8.2"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2014-09-10"><meta name="DC.source" content="Time_dep.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>This script solves the time dependent problem using uniform triangulation.</h1><p>Wakil Sarfaraz   15/08/14</p><pre class="codeinput">clear <span class="string">all</span>;
+tic
+xmax = 5;
+tm = 1;
+dt = 0.01;
+M = tm/dt;
+
+ze = 0.5 ;
+zm = 1;
+epsilon1 =  0.9214;
+epsilon2 =  0.9214;
+zs = xmax;
+N = 64; <span class="comment">%(Number of points on the x, y interval on which the equation is solved.</span>
+X = linspace(0,xmax,N+1);
+T = linspace(0, tm,M+1); <span class="comment">%This divides the interval into N equispaced sub intervals.</span>
+<span class="comment">%X = 0: 1/N :1; This can also be used to create the same X.</span>
+[x, y] = meshgrid(X,X); <span class="comment">% This creates an (N+1) by (N+1) grid of values ...</span>
+                        <span class="comment">% of X and assignes them to x and y. (So x and y</span>
+                        <span class="comment">% are now matrices of size (N+1)x(N+1)</span>
+x =x(:);  <span class="comment">% This turns the matrix x into a column vector.</span>
+y =y(:);  <span class="comment">% This turns the matrix y into a column vector.</span>
+NNODES = (N+1)^2;
+Q = ones(NNODES,1);<span class="comment">% This introduces the number of nodes in the result of triangulation.</span>
+NTRI = 2*N^2;  <span class="comment">% This is the number of triangles in the mesh.</span>
+LNODES = zeros(NTRI,3); <span class="comment">% This creates a zero matrix of the size 'number of triangles by 3'</span>
+                         <span class="comment">% (since there are 3 vertices for each triangle.</span>
+
+<span class="keyword">for</span> i = 1:N
+    <span class="keyword">for</span> j = 1: N
+        LNODES(i+2*(j-1)*N,1) = i+(j-1)*(N+1);<span class="comment">%This numbers each of the first nodes of all the lower triangles in each square.</span>
+        LNODES(i+2*(j-1)*N,2) = i+j*(N+1); <span class="comment">% This numbers each of the second nodes of all the lower triangles in each square.</span>
+        LNODES(i+2*(j-1)*N,3) = (i+1)+(j-1)*(N+1); <span class="comment">% This numbers each of the third nodes of all the lower triangles in each square.</span>
+
+        LNODES(i+N+2*(j-1)*N,1) = i+1+j*(N+1); <span class="comment">%This numbers each of the first nodes of all the upper triangles in each square.</span>
+        LNODES(i+N+2*(j-1)*N,2) = (i+1)+(j-1)*(N+1);<span class="comment">%This numbers each of the second nodes of all the upper triangles in each square.</span>
+        LNODES(i+N+2*(j-1)*N,3) = i+j*(N+1);<span class="comment">%This numbers each of the third nodes of all the upper triangles in each square.</span>
+                                            <span class="comment">% Here for those nodes that</span>
+                                            <span class="comment">% some triangles share (copy</span>
+                                            <span class="comment">% and paste can work).</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+SP = sparse(NNODES, NNODES);
+SPM = sparse(NNODES, NNODES);<span class="comment">%This creates a sparse matrix of the size 'Number of nodes by Number of nodes'(entries usually computed by integration).</span>
+LV = zeros(NNODES,1);         <span class="comment">% This creates the load vector of zero entries for now which is l(v) part of the weak formulation.</span>
+
+<span class="keyword">for</span> n = 1: NTRI
+    r1 = [x(LNODES(n,1)) y(LNODES(n,1))];<span class="comment">% Position vector (x,y)' for the first nodes of all triangles.</span>
+    r2 = [x(LNODES(n,2)) y(LNODES(n,2))];<span class="comment">% Position vector (x,y)' for the second nodes of all triangles.</span>
+    r3 = [x(LNODES(n,3)) y(LNODES(n,3))];<span class="comment">% Position vector (x,y)' for the third nodes of all triangles.</span>
+    J = [r2(1)-r1(1) r2(2)-r1(2); r3(1)-r1(1) r3(2)-r1(2)]; <span class="comment">%This is the jacobian matrix of the mapping.</span>
+<span class="comment">%     ksi = 1/3;</span>
+<span class="comment">%     eta = 1/3;</span>
+   Astiff = ((r2(1)+r3(1))/(2*det(J)))*<span class="keyword">...</span>
+       [(r2(2)-r3(2))^2+(r3(1)-r2(1))^2 <span class="keyword">...</span>
+       (r2(2)-r3(2))*(r3(2)-r1(2))+(r3(1)-r2(1))*(r1(1)-r3(1))<span class="keyword">...</span>
+       (r2(2)-r3(2))*(r1(2)-r2(2))+(r3(1)-r2(1))*(r2(1)-r1(1)); <span class="keyword">...</span>
+       (r3(2)-r1(2))*(r2(2)-r3(2))+(r1(1)-r3(1))*(r3(1)-r2(1)) <span class="keyword">...</span>
+       (r3(2)-r1(2))^2+(r1(1)-r3(1))^2  <span class="keyword">...</span>
+       (r3(2)-r1(2))*(r1(2)-r2(2))+(r1(1)-r3(1))*(r2(1)-r1(1)); <span class="keyword">...</span>
+       (r2(2)-r3(2))*(r1(2)-r2(2))+(r3(1)-r2(1))*(r2(1)-r1(1))  <span class="keyword">...</span>
+       (r3(2)-r1(2))*(r1(2)-r2(2))+(r1(1)-r3(1))*(r2(1)-r1(1))  <span class="keyword">...</span>
+       (r1(2)-r2(2))^2+(r2(1)-r1(1))^2];
+
+   Amass = (det(J)/120)*[6*r1(1)+2*r2(1)+2*r3(1) 2*r1(1)+2*r2(1)+r3(1) 2*r1(1)+r2(1)+2*r3(1);<span class="keyword">...</span>
+       2*r1(1)+2*r2(1)+r3(1) 2*r1(1)+2*r2(1)+2*r3(1) r1(1)+2*r2(1)+2*r3(1);<span class="keyword">...</span>
+       2*r1(1)+r2(1)+2*r3(1) r1(1)+2*r2(1)+2*r3(1)  2*r1(1)+2*r2(1)+2*r3(1)];
+
+   yave = (r1(2)+r2(2)+r3(2))/3 ;
+
+   <span class="keyword">if</span> yave &lt;= ze
+       Astiff = (1+epsilon1)/(1-epsilon1) *Astiff;
+   <span class="keyword">elseif</span> yave &gt;= zm
+       Astiff = (1+epsilon2)/(1-epsilon2) *Astiff;
+   <span class="keyword">end</span>
+
+
+
+
+       <span class="keyword">for</span> i = 1 : 3
+           <span class="keyword">for</span> j = 1:3  <span class="comment">% Since SP was created a zero matrix originally, Now for all three vertices of all triangles we put the</span>
+               SP(LNODES(n,i),LNODES(n,j)) =SP(LNODES(n,i),LNODES(n,j))+ Astiff(i,j);
+               SPM(LNODES(n,i),LNODES(n,j)) =SPM(LNODES(n,i),LNODES(n,j))+ Amass(i,j);<span class="comment">%The values of Astiff in the SP.</span>
+           <span class="keyword">end</span>
+       <span class="keyword">end</span>
+
+
+
+<span class="keyword">end</span>
+
+
+TMatrix =  (dt*SP+SPM);
+
+
+
+<span class="keyword">for</span> i = 1: NNODES
+    <span class="keyword">if</span> (x(i)==xmax )  <span class="comment">% Boundary condition for the first layer.</span>
+        LV(i) = 1;
+        TMatrix(i,:) = 0;
+        SPM(i,:) = 0;
+        TMatrix(i,i) =1 ;
+     <span class="keyword">elseif</span> (y(i) == 0 &amp;&amp; x(i) &gt;= 0 &amp;&amp; x(i) &lt;= 1) <span class="comment">% boundary condition for the second layer.</span>
+        TMatrix(i,:) = 0;
+        TMatrix(i,i) = 1;
+        SPM(i,:) = 0;
+        LV(i) = 0;
+    <span class="keyword">elseif</span> ( y(i) == zs )
+        LV(i) = 1;
+        TMatrix(i,:) = 0;
+        TMatrix(i,i) =1 ;
+        SPM(i,:) = 0;
+
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+Dh = zeros(NTRI,1);
+Ih = zeros(length(T),1);
+<span class="keyword">for</span> j = 1:M
+    RHS = SPM*Q+LV;
+    Q = TMatrix\RHS;
+    trisurf(LNODES,x,y,Q(:,:))
+<span class="comment">%shading interp</span>
+xlabel(<span class="string">'r'</span>,<span class="string">'fontsize'</span>,16)
+xlim([0 xmax])
+ylim([0 xmax])
+zlim([0 1])
+ylabel(<span class="string">'z'</span>,<span class="string">'fontsize'</span>,16)
+zlabel(<span class="string">'q(r,z)'</span>,<span class="string">'fontsize'</span>,16)
+title([<span class="string">'Partial pressure at t= '</span>,num2str(T(j))],<span class="string">'fontsize'</span>,20)
+pause(1e-5)
+
+<span class="keyword">for</span> i = 1: NTRI
+
+    Dh(i) = ([x(LNODES(i,1))-x(LNODES(i,3)) y(LNODES(i,1))-y(LNODES(i,3))]*<span class="keyword">...</span>
+        [x(LNODES(i,1))-x(LNODES(i,3)) y(LNODES(i,1))-y(LNODES(i,3))]'<span class="keyword">...</span>
+        *(Q(LNODES(i,2))-Q(LNODES(i,1)))*(Q(LNODES(i,1))-Q(LNODES(i,2)))<span class="keyword">...</span>
+        +[x(LNODES(i,1))-x(LNODES(i,2)) y(LNODES(i,1))-y(LNODES(i,2))]*<span class="keyword">...</span>
+        [x(LNODES(i,1))-x(LNODES(i,2)) y(LNODES(i,1))-y(LNODES(i,2))]'<span class="keyword">...</span>
+        *(Q(LNODES(i,3))-Q(LNODES(i,1)))*(Q(LNODES(i,1))-Q(LNODES(i,3)))<span class="keyword">...</span>
+        +[x(LNODES(i,2))-x(LNODES(i,1)) y(LNODES(i,2))-y(LNODES(i,1))]*<span class="keyword">...</span>
+        [x(LNODES(i,1))-x(LNODES(i,3)) y(LNODES(i,1))-y(LNODES(i,3))]'<span class="keyword">...</span>
+        *((Q(LNODES(i,3))-Q(LNODES(i,1)))*(Q(LNODES(i,1))-Q(LNODES(i,2)))<span class="keyword">...</span>
+        +(Q(LNODES(i,2))-Q(LNODES(i,1)))*(Q(LNODES(i,1))-Q(LNODES(i,3)))))<span class="keyword">...</span>
+        *(1/6)*(x(LNODES(i,1))+x(LNODES(i,2))+x(LNODES(i,3)));
+
+    yave = (y(LNODES(i,1))+ y(LNODES(i,2))+y(LNODES(i,3)))/3;
+    <span class="keyword">if</span> (yave &gt;=ze &amp;&amp; yave &lt;=zm )
+        Dh(i) = (1-epsilon1)/(1+epsilon1) * Dh(i);
+    <span class="keyword">elseif</span> yave &gt;=zm
+        Dh(i) = (1+epsilon2)*(1-epsilon1)/(1-epsilon2)/(1+epsilon1) *Dh(i);
+    <span class="keyword">end</span>
+    r1 = [x(LNODES(i,1)) y(LNODES(i,1))];<span class="comment">% Position vector (x,y)' for the first nodes of all triangles.</span>
+    r2 = [x(LNODES(i,2)) y(LNODES(i,2))];<span class="comment">% Position vector (x,y)' for the second nodes of all triangles.</span>
+    r3 = [x(LNODES(i,3)) y(LNODES(i,3))];<span class="comment">% Position vector (x,y)' for the third nodes of all triangles.</span>
+    J = [r2(1)-r1(1) r2(2)-r1(2); r3(1)-r1(1) r3(2)-r1(2)];
+
+    Ih(j+1)= Ih(j+1)+(Dh(i)/det(J));
+<span class="keyword">end</span>
+
+Ih(j+1) = -(pi/2)*Ih(j+1);
+
+<span class="keyword">end</span>
+
+plot(T,Ih,<span class="string">'linewidth'</span>,2)
+xlabel(<span class="string">'t'</span>,<span class="string">'fontsize'</span>,16)
+ylabel(<span class="string">'Current'</span>)
+title(<span class="string">'Current plot vs Time'</span>,<span class="string">'fontsize'</span>,20)
+toc
+max(Ih);
+</pre><pre class="codeoutput">Elapsed time is 76.162874 seconds.
+</pre><img vspace="5" hspace="5" src="Time_dep_01.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2013b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% This script solves the time dependent problem using uniform triangulation.
+% Wakil Sarfaraz   15/08/14
+clear all;
+tic
+xmax = 5;
+tm = 1;
+dt = 0.01;
+M = tm/dt;
+
+ze = 0.5 ;
+zm = 1;
+epsilon1 =  0.9214;
+epsilon2 =  0.9214;
+zs = xmax;
+N = 64; %(Number of points on the x, y interval on which the equation is solved.
+X = linspace(0,xmax,N+1);
+T = linspace(0, tm,M+1); %This divides the interval into N equispaced sub intervals.
+%X = 0: 1/N :1; This can also be used to create the same X.
+[x, y] = meshgrid(X,X); % This creates an (N+1) by (N+1) grid of values ...
+                        % of X and assignes them to x and y. (So x and y
+                        % are now matrices of size (N+1)x(N+1)
+x =x(:);  % This turns the matrix x into a column vector.
+y =y(:);  % This turns the matrix y into a column vector.
+NNODES = (N+1)^2;
+Q = ones(NNODES,1);% This introduces the number of nodes in the result of triangulation.
+NTRI = 2*N^2;  % This is the number of triangles in the mesh.
+LNODES = zeros(NTRI,3); % This creates a zero matrix of the size 'number of triangles by 3'
+                         % (since there are 3 vertices for each triangle.
+
+for i = 1:N
+    for j = 1: N
+        LNODES(i+2*(j-1)*N,1) = i+(j-1)*(N+1);%This numbers each of the first nodes of all the lower triangles in each square.
+        LNODES(i+2*(j-1)*N,2) = i+j*(N+1); % This numbers each of the second nodes of all the lower triangles in each square.
+        LNODES(i+2*(j-1)*N,3) = (i+1)+(j-1)*(N+1); % This numbers each of the third nodes of all the lower triangles in each square.
+        
+        LNODES(i+N+2*(j-1)*N,1) = i+1+j*(N+1); %This numbers each of the first nodes of all the upper triangles in each square.
+        LNODES(i+N+2*(j-1)*N,2) = (i+1)+(j-1)*(N+1);%This numbers each of the second nodes of all the upper triangles in each square.
+        LNODES(i+N+2*(j-1)*N,3) = i+j*(N+1);%This numbers each of the third nodes of all the upper triangles in each square.
+                                            % Here for those nodes that
+                                            % some triangles share (copy
+                                            % and paste can work).
+    end
+end
+
+SP = sparse(NNODES, NNODES);
+SPM = sparse(NNODES, NNODES);%This creates a sparse matrix of the size 'Number of nodes by Number of nodes'(entries usually computed by integration).
+LV = zeros(NNODES,1);         % This creates the load vector of zero entries for now which is l(v) part of the weak formulation.
+
+for n = 1: NTRI
+    r1 = [x(LNODES(n,1)) y(LNODES(n,1))];% Position vector (x,y)' for the first nodes of all triangles.
+    r2 = [x(LNODES(n,2)) y(LNODES(n,2))];% Position vector (x,y)' for the second nodes of all triangles.
+    r3 = [x(LNODES(n,3)) y(LNODES(n,3))];% Position vector (x,y)' for the third nodes of all triangles.
+    J = [r2(1)-r1(1) r2(2)-r1(2); r3(1)-r1(1) r3(2)-r1(2)]; %This is the jacobian matrix of the mapping.
+%     ksi = 1/3;
+%     eta = 1/3;
+   Astiff = ((r2(1)+r3(1))/(2*det(J)))*...
+       [(r2(2)-r3(2))^2+(r3(1)-r2(1))^2 ...
+       (r2(2)-r3(2))*(r3(2)-r1(2))+(r3(1)-r2(1))*(r1(1)-r3(1))...
+       (r2(2)-r3(2))*(r1(2)-r2(2))+(r3(1)-r2(1))*(r2(1)-r1(1)); ...
+       (r3(2)-r1(2))*(r2(2)-r3(2))+(r1(1)-r3(1))*(r3(1)-r2(1)) ...
+       (r3(2)-r1(2))^2+(r1(1)-r3(1))^2  ...
+       (r3(2)-r1(2))*(r1(2)-r2(2))+(r1(1)-r3(1))*(r2(1)-r1(1)); ...
+       (r2(2)-r3(2))*(r1(2)-r2(2))+(r3(1)-r2(1))*(r2(1)-r1(1))  ...
+       (r3(2)-r1(2))*(r1(2)-r2(2))+(r1(1)-r3(1))*(r2(1)-r1(1))  ... 
+       (r1(2)-r2(2))^2+(r2(1)-r1(1))^2];
+   
+   Amass = (det(J)/120)*[6*r1(1)+2*r2(1)+2*r3(1) 2*r1(1)+2*r2(1)+r3(1) 2*r1(1)+r2(1)+2*r3(1);...
+       2*r1(1)+2*r2(1)+r3(1) 2*r1(1)+2*r2(1)+2*r3(1) r1(1)+2*r2(1)+2*r3(1);...
+       2*r1(1)+r2(1)+2*r3(1) r1(1)+2*r2(1)+2*r3(1)  2*r1(1)+2*r2(1)+2*r3(1)];
+   
+   yave = (r1(2)+r2(2)+r3(2))/3 ;
+   
+   if yave <= ze
+       Astiff = (1+epsilon1)/(1-epsilon1) *Astiff;
+   elseif yave >= zm
+       Astiff = (1+epsilon2)/(1-epsilon2) *Astiff;
+   end
+  
+     
+
+   
+       for i = 1 : 3 
+           for j = 1:3  % Since SP was created a zero matrix originally, Now for all three vertices of all triangles we put the 
+               SP(LNODES(n,i),LNODES(n,j)) =SP(LNODES(n,i),LNODES(n,j))+ Astiff(i,j);
+               SPM(LNODES(n,i),LNODES(n,j)) =SPM(LNODES(n,i),LNODES(n,j))+ Amass(i,j);%The values of Astiff in the SP.
+           end
+       end
+       
+    
+       
+end
+
+
+TMatrix =  (dt*SP+SPM);
+
+
+
+for i = 1: NNODES
+    if (x(i)==xmax )  % Boundary condition for the first layer.
+        LV(i) = 1;
+        TMatrix(i,:) = 0;
+        SPM(i,:) = 0;
+        TMatrix(i,i) =1 ;
+     elseif (y(i) == 0 && x(i) >= 0 && x(i) <= 1) % boundary condition for the second layer.
+        TMatrix(i,:) = 0;
+        TMatrix(i,i) = 1;
+        SPM(i,:) = 0;
+        LV(i) = 0;
+    elseif ( y(i) == zs )
+        LV(i) = 1;
+        TMatrix(i,:) = 0;
+        TMatrix(i,i) =1 ;
+        SPM(i,:) = 0;
+       
+    end
+end
+Dh = zeros(NTRI,1);
+Ih = zeros(length(T),1);
+for j = 1:M
+    RHS = SPM*Q+LV;
+    Q = TMatrix\RHS;
+    trisurf(LNODES,x,y,Q(:,:))
+%shading interp
+xlabel('r','fontsize',16) 
+xlim([0 xmax])
+ylim([0 xmax])
+zlim([0 1])
+ylabel('z','fontsize',16)
+zlabel('q(r,z)','fontsize',16)
+title(['Partial pressure at t= ',num2str(T(j))],'fontsize',20)
+pause(1e-5)
+
+for i = 1: NTRI
+   
+    Dh(i) = ([x(LNODES(i,1))-x(LNODES(i,3)) y(LNODES(i,1))-y(LNODES(i,3))]*...
+        [x(LNODES(i,1))-x(LNODES(i,3)) y(LNODES(i,1))-y(LNODES(i,3))]'...
+        *(Q(LNODES(i,2))-Q(LNODES(i,1)))*(Q(LNODES(i,1))-Q(LNODES(i,2)))...
+        +[x(LNODES(i,1))-x(LNODES(i,2)) y(LNODES(i,1))-y(LNODES(i,2))]*...
+        [x(LNODES(i,1))-x(LNODES(i,2)) y(LNODES(i,1))-y(LNODES(i,2))]'...
+        *(Q(LNODES(i,3))-Q(LNODES(i,1)))*(Q(LNODES(i,1))-Q(LNODES(i,3)))...
+        +[x(LNODES(i,2))-x(LNODES(i,1)) y(LNODES(i,2))-y(LNODES(i,1))]*...
+        [x(LNODES(i,1))-x(LNODES(i,3)) y(LNODES(i,1))-y(LNODES(i,3))]'...
+        *((Q(LNODES(i,3))-Q(LNODES(i,1)))*(Q(LNODES(i,1))-Q(LNODES(i,2)))...
+        +(Q(LNODES(i,2))-Q(LNODES(i,1)))*(Q(LNODES(i,1))-Q(LNODES(i,3)))))...
+        *(1/6)*(x(LNODES(i,1))+x(LNODES(i,2))+x(LNODES(i,3)));
+    
+    yave = (y(LNODES(i,1))+ y(LNODES(i,2))+y(LNODES(i,3)))/3;
+    if (yave >=ze && yave <=zm )
+        Dh(i) = (1-epsilon1)/(1+epsilon1) * Dh(i);
+    elseif yave >=zm 
+        Dh(i) = (1+epsilon2)*(1-epsilon1)/(1-epsilon2)/(1+epsilon1) *Dh(i);
+    end
+    r1 = [x(LNODES(i,1)) y(LNODES(i,1))];% Position vector (x,y)' for the first nodes of all triangles.
+    r2 = [x(LNODES(i,2)) y(LNODES(i,2))];% Position vector (x,y)' for the second nodes of all triangles.
+    r3 = [x(LNODES(i,3)) y(LNODES(i,3))];% Position vector (x,y)' for the third nodes of all triangles.
+    J = [r2(1)-r1(1) r2(2)-r1(2); r3(1)-r1(1) r3(2)-r1(2)];
+  
+    Ih(j+1)= Ih(j+1)+(Dh(i)/det(J));
+end
+
+Ih(j+1) = -(pi/2)*Ih(j+1);
+
+end 
+
+plot(T,Ih,'linewidth',2)
+xlabel('t','fontsize',16)
+ylabel('Current')
+title('Current plot vs Time','fontsize',20)
+toc
+max(Ih);
+
+##### SOURCE END #####
+--></body></html>
